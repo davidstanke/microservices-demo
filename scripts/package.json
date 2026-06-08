@@ -1,0 +1,13 @@
+{
+  "name": "microservices-demo-utility-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for Google Cloud Microservices Demo",
+  "main": "generate-issues.js",
+  "type": "module",
+  "scripts": {
+    "start": "node generate-issues.js"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.2.0"
+  }
+}
