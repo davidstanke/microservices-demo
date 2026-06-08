@@ -8,6 +8,6 @@
     "start": "node generate-issues.js"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.2.0"
+    "@google/genai": "^2.8.0"
   }
 }

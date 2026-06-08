@@ -1,6 +1,6 @@
 # 🎨 Online Boutique - GitHub Issue Generator
 
-This utility dynamically generates and submits extremely detailed, context-aware, and highly realistic development, SRE, security, and infrastructure issues to your GitHub repository. It uses Vertex AI's Gemini API (via Application Default Credentials) to analyze the microservices stack and generate professional issues containing:
+This utility dynamically generates and submits extremely detailed, context-aware, and highly realistic development, SRE, security, and infrastructure issues to your GitHub repository. It uses Google's unified Gen AI SDK (`@google/genai`) and Vertex AI (via Application Default Credentials) to analyze the microservices stack and generate professional issues containing:
 - Authenticated, language-specific logs or stack traces
 - Specific code file pointers in the repository
 - Relevant GitHub labels (e.g., `area:cartservice`, `category:security-compliance`)

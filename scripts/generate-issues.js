@@ -1,6 +1,6 @@
 import { execSync, spawnSync } from 'child_process';
 import readline from 'readline/promises';
-import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 
 // ASCII Art & Color Constants
 const COLORS = {
@@ -254,23 +254,23 @@ Ensure the issue uses highly specific domain knowledge. For C# (cartservice), us
   return prompt;
 }
 
-// Call Vertex AI Gemini API
 async function callGemini(projectId, prompt) {
   try {
-    const vertexAI = new VertexAI({ project: projectId, location: 'us-central1' });
-    const generativeModel = vertexAI.getGenerativeModel({
+    const ai = new GoogleGenAI({
+      vertexai: true,
+      project: projectId,
+      location: 'us-central1'
+    });
+    const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      generationConfig: {
+      contents: prompt,
+      config: {
         responseMimeType: 'application/json',
         temperature: 0.9,
       }
     });
 
-    const response = await generativeModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
-    });
-
-    const text = response.response.candidates[0].content.parts[0].text;
+    const text = response.text;
     const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanedText);
   } catch (error) {
@@ -365,18 +365,24 @@ async function main() {
     const prompt = constructPrompt(options.service, options.category, options.severity);
     const issue = await callGemini(projectId, prompt);
 
+    const title = issue.title || '[Untitled Issue]';
+    const body = issue.body || 'No description provided.';
+    const labels = issue.labels || [];
+
     console.log(`\n${COLORS.bright}------------------------------------------------------------`);
-    console.log(`${COLORS.cyan}Generated Title:${COLORS.reset} ${COLORS.bright}${issue.title}${COLORS.reset}`);
-    console.log(`${COLORS.cyan}Labels:${COLORS.reset} [${issue.labels.join(', ')}]`);
+    console.log(`${COLORS.cyan}Generated Title:${COLORS.reset} ${COLORS.bright}${title}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}Labels:${COLORS.reset} [${labels.join(', ')}]`);
     console.log(`${COLORS.bright}------------------------------------------------------------${COLORS.reset}`);
     
+    const safeIssue = { title, body, labels };
+
     if (options.dryRun) {
       console.log(`\n${COLORS.yellow}--- DRY RUN OUTPUT ---${COLORS.reset}\n`);
-      console.log(issue.body);
+      console.log(body);
       console.log(`\n${COLORS.yellow}-----------------------${COLORS.reset}\n`);
     } else {
       console.log('Submitting issue to GitHub...');
-      createGithubIssue(issue);
+      createGithubIssue(safeIssue);
     }
   }
 
