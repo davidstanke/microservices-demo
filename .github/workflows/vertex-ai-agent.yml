@@ -48,19 +48,44 @@ jobs:
             exit 1
           fi
           
-          # Extract the agent's response
-          COMMENT_BODY=$(jq -r '.output' response.json)
-          if [ "$COMMENT_BODY" = "null" ] || [ -z "$COMMENT_BODY" ]; then
+          # Verify .output exists and is not null/empty
+          OUTPUT_VAL=$(jq -r '.output' response.json)
+          if [ "$OUTPUT_VAL" = "null" ] || [ -z "$OUTPUT_VAL" ]; then
             echo "Failed to extract output. Response was:"
             cat response.json
             exit 1
           fi
-          
-          # Save comment body to a file to preserve formatting and prevent shell limits
-          echo "$COMMENT_BODY" > comment.txt
 
-      - name: Comment on Issue
+      - name: Assign and Comment on Issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
-          gh issue comment "${{ github.event.issue.html_url }}" --body-file comment.txt
+          # Extract assigned_engineer and explanation
+          # We use a robust jq query to handle .output being either a JSON object or JSON string
+          ASSIGNEE=$(jq -r '.output | if type == "string" then fromjson else . end | .assigned_engineer' response.json)
+          EXPLANATION=$(jq -r '.output | if type == "string" then fromjson else . end | .explanation' response.json)
+
+          if [ "$ASSIGNEE" = "null" ] || [ -z "$ASSIGNEE" ]; then
+            echo "Failed to extract assigned_engineer. Response was:"
+            cat response.json
+            exit 1
+          fi
+
+          # Attempt to assign the issue (using --add-assignee to keep existing assignees as well)
+          ASSIGN_FAILED=false
+          echo "Attempting to assign issue to $ASSIGNEE..."
+          if ! gh issue edit "$ISSUE_URL" --add-assignee "$ASSIGNEE"; then
+            echo "::warning::Failed to assign $ASSIGNEE to the issue."
+            ASSIGN_FAILED=true
+          fi
+
+          # Prepare comment body based on assignment success
+          if [ "$ASSIGN_FAILED" = "false" ]; then
+            echo "Assigned to $ASSIGNEE. Reason: $EXPLANATION" > comment.txt
+          else
+            echo "Attempted to assign to $ASSIGNEE, but assignment failed (e.g. user is not a collaborator). Reason: $EXPLANATION" > comment.txt
+          fi
+
+          # Post comment to issue
+          gh issue comment "$ISSUE_URL" --body-file comment.txt
