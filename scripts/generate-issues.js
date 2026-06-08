@@ -266,13 +266,31 @@ async function callGemini(projectId, prompt) {
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            body: { type: 'string' },
+            labels: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          },
+          required: ['title', 'body', 'labels']
+        },
         temperature: 0.9,
       }
     });
 
     const text = response.text;
     const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanedText);
+    try {
+      return JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error(`${COLORS.red}${COLORS.bright}Error parsing Gemini JSON response:${COLORS.reset}`, parseError.message);
+      console.error(`${COLORS.dim}Raw Response Output:${COLORS.reset}\n`, text);
+      throw parseError;
+    }
   } catch (error) {
     console.error(`${COLORS.red}${COLORS.bright}Error calling Vertex AI Gemini API:${COLORS.reset}`, error.message);
     console.error('\nMake sure you have:');
