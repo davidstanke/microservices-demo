@@ -79,6 +79,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           # Extract assigned_engineer and explanation
           # We use a robust jq query to handle .output being either a JSON object or JSON string
@@ -99,11 +100,17 @@ jobs:
             ASSIGN_FAILED=true
           fi
 
-          # Prepare comment body based on assignment success
-          if [ "$ASSIGN_FAILED" = "false" ]; then
-            echo "Assigned to $ASSIGNEE. Reason: $EXPLANATION" > comment.txt
+          # Prepare comment body based on event type
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            # Post the returned message (explanation) directly as a new comment on the issue
+            echo "$EXPLANATION" > comment.txt
           else
-            echo "Attempted to assign to $ASSIGNEE, but assignment failed (e.g. user is not a collaborator). Reason: $EXPLANATION" > comment.txt
+            # Default behavior for initial assignment
+            if [ "$ASSIGN_FAILED" = "false" ]; then
+              echo "Assigned to $ASSIGNEE. Reason: $EXPLANATION" > comment.txt
+            else
+              echo "Attempted to assign to $ASSIGNEE, but assignment failed (e.g. user is not a collaborator). Reason: $EXPLANATION" > comment.txt
+            fi
           fi
 
           # Post comment to issue
