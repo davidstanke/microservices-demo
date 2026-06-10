@@ -45,7 +45,7 @@ jobs:
           fi
           
           # Use jq to construct a safe JSON payload
-          jq -n --arg query "$QUERY" '{input: {query: $query}}' > payload.json
+          jq -n --arg query "$QUERY" '{input: {query: $query, user_id: "issue-triage-client"}}' > payload.json
           
           # Get access token locally using gcloud (no extra IAM permissions needed)
           ACCESS_TOKEN=$(gcloud auth print-access-token)
