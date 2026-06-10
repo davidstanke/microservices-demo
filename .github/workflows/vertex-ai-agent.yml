@@ -38,7 +38,7 @@ jobs:
             FEEDBACK_CONTENT="${COMMENT_BODY#"/assignment-feedback"}"
             
             # Format query exactly as requested
-            QUERY=$(printf "FEEDBACK:" "$FEEDBACK_CONTENT" "$ISSUE_TITLE" "$ISSUE_BODY")
+            QUERY=$(printf "FEEDBACK: %s\n-----\nIssue details:\n%s\n%s" "$FEEDBACK_CONTENT" "$ISSUE_TITLE" "$ISSUE_BODY")
           else
             # Combine title and body safely for initial assignment
             QUERY=$(printf "%s\n\n%s" "$ISSUE_TITLE" "$ISSUE_BODY")
