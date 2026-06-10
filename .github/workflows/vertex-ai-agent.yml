@@ -3,6 +3,8 @@ name: Vertex AI Issue Agent
 on:
   issues:
     types: [opened]
+  issue_comment:
+    types: [created]
 
 permissions:
   issues: write
@@ -10,6 +12,9 @@ permissions:
 jobs:
   query-agent:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/assignment-feedback'))
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,11 +28,25 @@ jobs:
       - name: Prepare Payload and Query Vertex AI
         id: query
         env:
+          EVENT_NAME: ${{ github.event_name }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          # Combine title and body safely
-          QUERY=$(printf "%s\n\n%s" "$ISSUE_TITLE" "$ISSUE_BODY")
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            # Strip prefix "/assignment-feedback"
+            FEEDBACK_CONTENT="${COMMENT_BODY#"/assignment-feedback"}"
+            
+            # Trim leading/trailing whitespace safely using python to preserve inner formatting
+            export FEEDBACK_CONTENT
+            FEEDBACK_CONTENT=$(python3 -c 'import os; print(os.environ["FEEDBACK_CONTENT"].strip())')
+            
+            # Format query exactly as requested
+            QUERY=$(printf "FEEDBACK: %s\n-----\nIssue details:\n%s\n%s" "$FEEDBACK_CONTENT" "$ISSUE_TITLE" "$ISSUE_BODY")
+          else
+            # Combine title and body safely for initial assignment
+            QUERY=$(printf "%s\n\n%s" "$ISSUE_TITLE" "$ISSUE_BODY")
+          fi
           
           # Use jq to construct a safe JSON payload
           jq -n --arg query "$QUERY" '{input: {query: $query}}' > payload.json
