@@ -88,7 +88,17 @@ jobs:
             exit 1
           fi
 
-          # Attempt to assign the issue (using --add-assignee to keep existing assignees as well)
+          # Retrieve current assignees to unassign them before adding the new assignee
+          CURRENT_ASSIGNEES=$(gh issue view "$ISSUE_URL" --json assignees --jq '[.assignees[].login] | join(",")')
+
+          if [ -n "$CURRENT_ASSIGNEES" ]; then
+            echo "Removing existing assignees: $CURRENT_ASSIGNEES"
+            if ! gh issue edit "$ISSUE_URL" --remove-assignee "$CURRENT_ASSIGNEES"; then
+              echo "::warning::Failed to remove existing assignees."
+            fi
+          fi
+
+          # Attempt to assign the issue
           ASSIGN_FAILED=false
           echo "Attempting to assign issue to $ASSIGNEE..."
           if ! gh issue edit "$ISSUE_URL" --add-assignee "$ASSIGNEE"; then
