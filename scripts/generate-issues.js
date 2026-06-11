@@ -199,8 +199,8 @@ async function runInteractiveWizard() {
   const countResponse = await rl.question(`\n${COLORS.bright}How many issues would you like to generate? [1]: ${COLORS.reset}`);
   const count = parseInt(countResponse, 10) || 1;
 
-  const dryRunResponse = await rl.question(`\n${COLORS.bright}Run in dry-run mode? (Y/n) [Y]: ${COLORS.reset}`);
-  const dryRun = dryRunResponse.trim().toLowerCase() !== 'n';
+  const dryRunResponse = await rl.question(`\n${COLORS.bright}Run in dry-run mode? (y/N) [N]: ${COLORS.reset}`);
+  const dryRun = dryRunResponse.trim().toLowerCase() === 'y';
 
   rl.close();
 
